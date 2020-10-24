@@ -1,0 +1,92 @@
+﻿@page "/listproducts"
+
+@using RealTime.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+<h2>List Products</h2>
+
+<p>
+    <a href="/addproduct">Create New Product</a>
+</p>
+
+
+@if (productos == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class='table'>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>ISBN</th>
+                <th>Author</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in productos)
+            {
+                <tr>
+                    <td>@producto.idProducto</td>
+                    <td>@producto.producto</td>
+                    <td>@producto.descripcion</td>
+                    <td>@producto.precio_costo</td>
+                    <td>
+                        <a href='/editproduct/@producto.idProducto'>Edit</a>
+                        <a href='/deleteproduct/@producto.idProducto'>Delete</a>
+                    </td>
+                </tr>
+
+            }
+        </tbody>
+    </table>
+}
+
+
+
+@code {
+    Productos[] productos;
+    private HubConnection hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/broadcastHub"))
+            .Build();
+
+        hubConnection.On("ReceiveMessage", () =>
+        {
+            CallLoadData();
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+
+        await LoadData();
+    }
+
+    private void CallLoadData()
+    {
+        Task.Run(async () =>
+        {
+            await LoadData();
+        });
+    }
+
+    protected async Task LoadData()
+    {
+        productos = await Http.GetFromJsonAsync<Productos[]>("api/productos");
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _ = hubConnection.DisposeAsync();
+    }
+}

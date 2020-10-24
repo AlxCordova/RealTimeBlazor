@@ -1,0 +1,88 @@
+﻿@page "/addproduct"
+
+@using RealTime.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+<h3>Create Product</h3>
+<hr />
+<form>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="form-group">
+                <label for="descripcion" class="control-label">descripcion</label>
+                <input for="descripcion" class="form-control" @bind="@producto.descripcion" />
+            </div>
+            <div class="form-group">
+                <label for="idProducto" class="control-label">idProducto</label>
+                <input for="idProducto" class="form-control" @bind="@producto.idProducto" />
+            </div>
+            <div class="form-group">
+                <label for="idProducto" class="control-label">existencia</label>
+                <input for="idProducto" class="form-control" @bind="@producto.existencia" />
+            </div>
+            <div class="form-group">
+                <label for="idMarca" class="control-label">idMarca</label>
+                <input for="idMarca" class="form-control" @bind="@producto.idMarca" />
+            </div>
+            <div class="form-group">
+                <label for="precio_costo" class="control-label">precio_costo</label>
+                <input for="precio_costo" class="form-control" @bind="@producto.precio_costo" />
+            </div>
+            <div class="form-group">
+                <label for="precio_venta" class="control-label">precio_venta</label>
+                <input for="precio_venta" class="form-control" @bind="@producto.precio_venta" />
+            </div>
+            <div class="form-group">
+                <label for="producto" class="control-label">precio_costo</label>
+                <input for="producto" class="form-control" @bind="@producto.producto" />
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <input type="button" class="btn btn-primary" @onclick="@CreateBook" value="Save" />
+                <input type="button" class="btn" @onclick="@Cancel" value="Cancel" />
+            </div>
+        </div>
+    </div>
+</form>
+
+@code {
+    private HubConnection hubConnection;
+    Productos producto = new Productos();
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/broadcastHub"))
+            .Build();
+
+        await hubConnection.StartAsync();
+    }
+
+    protected async Task CreateBook()
+    {
+        await Http.PostAsJsonAsync("api/productos", producto);
+        if (IsConnected) await SendMessage();
+        NavigationManager.NavigateTo("listproducts");
+    }
+
+    Task SendMessage() => hubConnection.SendAsync("SendMessage");
+
+    public bool IsConnected =>
+        hubConnection.State == HubConnectionState.Connected;
+
+    public void Dispose()
+    {
+        _ = hubConnection.DisposeAsync();
+    }
+
+    void Cancel()
+    {
+        NavigationManager.NavigateTo("listproducts");
+    }
+}
